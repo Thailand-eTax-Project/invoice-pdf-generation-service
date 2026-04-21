@@ -157,8 +157,7 @@ public class SagaCommandHandler implements ProcessInvoicePdfUseCase, CompensateI
                     String signedXml = signedXmlFetchPort.fetch(signedXmlUrl);
 
                     // Generate PDF bytes (CPU: FOP + PDFBox)
-                    byte[] pdfBytes = pdfGenerationService.generatePdf(
-                            documentNumber, signedXml, command.getInvoiceDataJson());
+                    byte[] pdfBytes = pdfGenerationService.generatePdf(documentNumber, signedXml);
 
                     // Upload to MinIO (network I/O)
                     s3Key = pdfStoragePort.store(documentNumber, pdfBytes);

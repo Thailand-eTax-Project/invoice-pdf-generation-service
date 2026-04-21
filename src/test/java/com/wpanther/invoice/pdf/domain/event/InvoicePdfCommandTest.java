@@ -14,7 +14,7 @@ class InvoicePdfCommandTest {
     void processCommand_nullDocumentId_throwsNullPointerException() {
         assertThatThrownBy(() ->
                 new ProcessInvoicePdfCommand("saga-1", SagaStep.GENERATE_INVOICE_PDF, "corr-1",
-                        null, "INV-001", "http://localhost/signed.xml", "{}"))
+                        null, "INV-001", "http://localhost/signed.xml"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("documentId");
     }
@@ -24,7 +24,7 @@ class InvoicePdfCommandTest {
     void processCommand_nullDocumentNumber_throwsNullPointerException() {
         assertThatThrownBy(() ->
                 new ProcessInvoicePdfCommand("saga-1", SagaStep.GENERATE_INVOICE_PDF, "corr-1",
-                        "doc-1", null, "http://localhost/signed.xml", "{}"))
+                        "doc-1", null, "http://localhost/signed.xml"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("documentNumber");
     }
@@ -34,19 +34,9 @@ class InvoicePdfCommandTest {
     void processCommand_nullSignedXmlUrl_throwsNullPointerException() {
         assertThatThrownBy(() ->
                 new ProcessInvoicePdfCommand("saga-1", SagaStep.GENERATE_INVOICE_PDF, "corr-1",
-                        "doc-1", "INV-001", null, "{}"))
+                        "doc-1", "INV-001", null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("signedXmlUrl");
-    }
-
-    @Test
-    @DisplayName("ProcessInvoicePdfCommand rejects null invoiceDataJson")
-    void processCommand_nullInvoiceDataJson_throwsNullPointerException() {
-        assertThatThrownBy(() ->
-                new ProcessInvoicePdfCommand("saga-1", SagaStep.GENERATE_INVOICE_PDF, "corr-1",
-                        "doc-1", "INV-001", "http://localhost/signed.xml", null))
-                .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("invoiceDataJson");
     }
 
     @Test
@@ -54,7 +44,7 @@ class InvoicePdfCommandTest {
     void processCommand_validArgs_constructsSuccessfully() {
         ProcessInvoicePdfCommand cmd = new ProcessInvoicePdfCommand(
                 "saga-1", SagaStep.GENERATE_INVOICE_PDF, "corr-1",
-                "doc-1", "INV-001", "http://localhost/signed.xml", "{}");
+                "doc-1", "INV-001", "http://localhost/signed.xml");
         org.assertj.core.api.Assertions.assertThat(cmd.getDocumentId()).isEqualTo("doc-1");
         org.assertj.core.api.Assertions.assertThat(cmd.getDocumentNumber()).isEqualTo("INV-001");
     }

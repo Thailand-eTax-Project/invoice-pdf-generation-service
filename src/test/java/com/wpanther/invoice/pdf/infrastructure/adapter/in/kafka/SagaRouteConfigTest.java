@@ -47,7 +47,7 @@ class SagaRouteConfigTest {
         ProcessInvoicePdfCommand command = new ProcessInvoicePdfCommand(
                 "saga-001", SagaStep.GENERATE_INVOICE_PDF, "corr-456",
                 "doc-123", "INV-2024-001",
-                "http://minio/signed/invoice.xml", "{}"
+                "http://minio/signed/invoice.xml"
         );
 
         String json = objectMapper.writeValueAsString(command);
@@ -59,7 +59,6 @@ class SagaRouteConfigTest {
         assertThat(deserialized.getDocumentId()).isEqualTo("doc-123");
         assertThat(deserialized.getDocumentNumber()).isEqualTo("INV-2024-001");
         assertThat(deserialized.getSignedXmlUrl()).isEqualTo("http://minio/signed/invoice.xml");
-        assertThat(deserialized.getInvoiceDataJson()).isEqualTo("{}");
         assertThat(deserialized.getEventId()).isNotNull();
         assertThat(deserialized.getOccurredAt()).isNotNull();
     }
@@ -78,8 +77,7 @@ class SagaRouteConfigTest {
                 "correlationId": "corr-456",
                 "documentId": "doc-123",
                 "documentNumber": "INV-2024-001",
-                "signedXmlUrl": "http://minio/signed/invoice.xml",
-                "invoiceDataJson": "{\\"key\\": \\"value\\"}"
+                "signedXmlUrl": "http://minio/signed/invoice.xml"
             }
             """;
 
@@ -90,7 +88,7 @@ class SagaRouteConfigTest {
         assertThat(cmd.getSagaStep()).isEqualTo(SagaStep.GENERATE_INVOICE_PDF);
         assertThat(cmd.getDocumentId()).isEqualTo("doc-123");
         assertThat(cmd.getDocumentNumber()).isEqualTo("INV-2024-001");
-        assertThat(cmd.getInvoiceDataJson()).isEqualTo("{\"key\": \"value\"}");
+        assertThat(cmd.getSignedXmlUrl()).isEqualTo("http://minio/signed/invoice.xml");
     }
 
     // -------------------------------------------------------------------------

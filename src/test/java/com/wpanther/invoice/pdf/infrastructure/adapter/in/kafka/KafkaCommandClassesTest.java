@@ -25,8 +25,7 @@ class KafkaCommandClassesTest {
                 "corr-456",
                 "doc-789",
                 "INV-2024-001",
-                "http://minio/signed/invoice.xml",
-                "{\"documentNumber\":\"INV-2024-001\"}"
+                "http://minio/signed/invoice.xml"
         );
 
         assertThat(cmd.getSagaId()).isEqualTo("saga-123");
@@ -35,7 +34,6 @@ class KafkaCommandClassesTest {
         assertThat(cmd.getDocumentId()).isEqualTo("doc-789");
         assertThat(cmd.getDocumentNumber()).isEqualTo("INV-2024-001");
         assertThat(cmd.getSignedXmlUrl()).isEqualTo("http://minio/signed/invoice.xml");
-        assertThat(cmd.getInvoiceDataJson()).isEqualTo("{\"documentNumber\":\"INV-2024-001\"}");
     }
 
     @Test
@@ -74,8 +72,7 @@ class KafkaCommandClassesTest {
                 "corr-456",
                 "doc-789",
                 "INV-2024-001",
-                "http://minio/signed/invoice.xml",
-                "{}"
+                "http://minio/signed/invoice.xml"
         );
 
         var domainProcess = mapper.toProcess(kafkaProcess);
@@ -101,7 +98,6 @@ class KafkaCommandClassesTest {
     void kafkaCommandMapper_preservesAllFields() {
         KafkaCommandMapper mapper = new KafkaCommandMapper();
 
-        // Test process command with all fields
         KafkaProcessInvoicePdfCommand kafkaProcess = new KafkaProcessInvoicePdfCommand(
                 java.util.UUID.randomUUID(),
                 Instant.now(),
@@ -112,8 +108,7 @@ class KafkaCommandClassesTest {
                 "corr-789",
                 "doc-111",
                 "INV-2025-001",
-                "http://minio/signed/invoice2.xml",
-                "{\"amount\":1000,\"currency\":\"THB\"}"
+                "http://minio/signed/invoice2.xml"
         );
 
         var domainProcess = mapper.toProcess(kafkaProcess);
@@ -122,9 +117,7 @@ class KafkaCommandClassesTest {
         assertThat(domainProcess.getDocumentId()).isEqualTo("doc-111");
         assertThat(domainProcess.getDocumentNumber()).isEqualTo("INV-2025-001");
         assertThat(domainProcess.getSignedXmlUrl()).isEqualTo("http://minio/signed/invoice2.xml");
-        assertThat(domainProcess.getInvoiceDataJson()).isEqualTo("{\"amount\":1000,\"currency\":\"THB\"}");
 
-        // Test compensate command
         KafkaCompensateInvoicePdfCommand kafkaCompensate = new KafkaCompensateInvoicePdfCommand(
                 java.util.UUID.randomUUID(),
                 Instant.now(),

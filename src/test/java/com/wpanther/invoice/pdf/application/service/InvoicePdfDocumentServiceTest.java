@@ -44,7 +44,7 @@ class InvoicePdfDocumentServiceTest {
         return new ProcessInvoicePdfCommand(
                 "saga-001", SagaStep.GENERATE_INVOICE_PDF, "corr-456",
                 "doc-123", "INV-001",
-                "http://minio/signed.xml", "{}");
+                "http://minio/signed.xml");
     }
 
     private CompensateInvoicePdfCommand compensateCommand() {

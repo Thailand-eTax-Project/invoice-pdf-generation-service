@@ -73,9 +73,6 @@ app:
       max-retries: ${PDF_GENERATION_MAX_RETRIES:3}
       max-concurrent-renders: ${PDF_MAX_CONCURRENT_RENDERS:3}
       max-pdf-size-bytes: ${PDF_MAX_SIZE_BYTES:52428800}
-  invoice:
-    default-vat-rate: ${INVOICE_DEFAULT_VAT_RATE:7}
-    max-json-size-bytes: ${INVOICE_MAX_JSON_SIZE_BYTES:1048576}
   # Font health check - validates Thai fonts at startup (enabled by default)
   fonts:
     health-check:

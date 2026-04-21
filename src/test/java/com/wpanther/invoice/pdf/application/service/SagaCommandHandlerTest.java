@@ -55,7 +55,7 @@ class SagaCommandHandlerTest {
         return new ProcessInvoicePdfCommand(
                 "saga-001", SagaStep.GENERATE_INVOICE_PDF, "corr-456",
                 "doc-123", "INV-2024-001",
-                SIGNED_XML_URL, "{}");
+                SIGNED_XML_URL);
     }
 
     private CompensateInvoicePdfCommand compensateCommand() {
@@ -92,7 +92,7 @@ class SagaCommandHandlerTest {
 
         when(pdfDocumentService.findByInvoiceId("doc-123")).thenReturn(Optional.empty());
         when(signedXmlFetchPort.fetch(SIGNED_XML_URL)).thenReturn(SIGNED_XML_CONTENT);
-        when(pdfGenerationService.generatePdf(anyString(), anyString(), anyString())).thenReturn(pdfBytes);
+        when(pdfGenerationService.generatePdf(anyString(), anyString())).thenReturn(pdfBytes);
         when(pdfStoragePort.store(anyString(), any())).thenReturn(S3_KEY);
         when(pdfStoragePort.resolveUrl(S3_KEY)).thenReturn(FILE_URL);
         when(pdfDocumentService.beginGeneration("doc-123", "INV-2024-001")).thenReturn(doc);
@@ -100,7 +100,7 @@ class SagaCommandHandlerTest {
         sagaCommandHandler.handle(processCommand());
 
         verify(pdfDocumentService).beginGeneration("doc-123", "INV-2024-001");
-        verify(pdfGenerationService).generatePdf("INV-2024-001", SIGNED_XML_CONTENT, "{}");
+        verify(pdfGenerationService).generatePdf("INV-2024-001", SIGNED_XML_CONTENT);
         verify(pdfStoragePort).store("INV-2024-001", pdfBytes);
         verify(pdfDocumentService).completeGenerationAndPublish(
                 eq(doc.getId()), eq(S3_KEY), eq(FILE_URL), eq(5000L), eq(-1), any());
@@ -153,7 +153,7 @@ class SagaCommandHandlerTest {
 
         when(pdfDocumentService.findByInvoiceId("doc-123")).thenReturn(Optional.of(failed));
         when(signedXmlFetchPort.fetch(SIGNED_XML_URL)).thenReturn(SIGNED_XML_CONTENT);
-        when(pdfGenerationService.generatePdf(anyString(), anyString(), anyString())).thenReturn(pdfBytes);
+        when(pdfGenerationService.generatePdf(anyString(), anyString())).thenReturn(pdfBytes);
         when(pdfStoragePort.store(anyString(), any())).thenReturn(S3_KEY);
         when(pdfStoragePort.resolveUrl(S3_KEY)).thenReturn(FILE_URL);
         when(pdfDocumentService.replaceAndBeginGeneration(eq(failedId), eq(1), anyString(), anyString()))
@@ -182,7 +182,7 @@ class SagaCommandHandlerTest {
 
         when(pdfDocumentService.findByInvoiceId("doc-123")).thenReturn(Optional.of(failed));
         when(signedXmlFetchPort.fetch(SIGNED_XML_URL)).thenReturn(SIGNED_XML_CONTENT);
-        when(pdfGenerationService.generatePdf(anyString(), anyString(), anyString())).thenReturn(pdfBytes);
+        when(pdfGenerationService.generatePdf(anyString(), anyString())).thenReturn(pdfBytes);
         when(pdfStoragePort.store(anyString(), any())).thenReturn(S3_KEY);
         when(pdfStoragePort.resolveUrl(S3_KEY)).thenReturn(FILE_URL);
         when(pdfDocumentService.replaceAndBeginGeneration(any(), eq(2), anyString(), anyString()))
@@ -212,7 +212,7 @@ class SagaCommandHandlerTest {
 
         when(pdfDocumentService.findByInvoiceId("doc-123")).thenReturn(Optional.of(stuck));
         when(signedXmlFetchPort.fetch(SIGNED_XML_URL)).thenReturn(SIGNED_XML_CONTENT);
-        when(pdfGenerationService.generatePdf(anyString(), anyString(), anyString())).thenReturn(pdfBytes);
+        when(pdfGenerationService.generatePdf(anyString(), anyString())).thenReturn(pdfBytes);
         when(pdfStoragePort.store(anyString(), any())).thenReturn(S3_KEY);
         when(pdfStoragePort.resolveUrl(S3_KEY)).thenReturn(FILE_URL);
         when(pdfDocumentService.replaceAndBeginGeneration(eq(stuckId), eq(1), anyString(), anyString()))
@@ -270,7 +270,7 @@ class SagaCommandHandlerTest {
     void handleProcessCommand_blankDocumentNumber() {
         ProcessInvoicePdfCommand cmd = new ProcessInvoicePdfCommand(
                 "saga-001", SagaStep.GENERATE_INVOICE_PDF, "corr-456",
-                "doc-123", "   ", SIGNED_XML_URL, "{}");
+                "doc-123", "   ", SIGNED_XML_URL);
 
         sagaCommandHandler.handle(cmd);
 
@@ -284,7 +284,7 @@ class SagaCommandHandlerTest {
     void handleProcessCommand_blankDocumentId() {
         ProcessInvoicePdfCommand cmd = new ProcessInvoicePdfCommand(
                 "saga-001", SagaStep.GENERATE_INVOICE_PDF, "corr-456",
-                "   ", "INV-2024-001", SIGNED_XML_URL, "{}");
+                "   ", "INV-2024-001", SIGNED_XML_URL);
 
         sagaCommandHandler.handle(cmd);
 
@@ -298,7 +298,7 @@ class SagaCommandHandlerTest {
     void handleProcessCommand_blankSignedXmlUrl() {
         ProcessInvoicePdfCommand cmd = new ProcessInvoicePdfCommand(
                 "saga-001", SagaStep.GENERATE_INVOICE_PDF, "corr-456",
-                "doc-123", "INV-2024-001", "  ", "{}");
+                "doc-123", "INV-2024-001", "  ");
 
         sagaCommandHandler.handle(cmd);
 
@@ -330,7 +330,7 @@ class SagaCommandHandlerTest {
         InvoicePdfDocument doc = generatingDoc();
         when(pdfDocumentService.findByInvoiceId("doc-123")).thenReturn(Optional.empty());
         when(signedXmlFetchPort.fetch(SIGNED_XML_URL)).thenReturn(SIGNED_XML_CONTENT);
-        when(pdfGenerationService.generatePdf(anyString(), anyString(), anyString()))
+        when(pdfGenerationService.generatePdf(anyString(), anyString()))
                 .thenThrow(new InvoicePdfGenerationException("FOP failed"));
         when(pdfDocumentService.beginGeneration(anyString(), anyString())).thenReturn(doc);
 
@@ -347,7 +347,7 @@ class SagaCommandHandlerTest {
         InvoicePdfDocument doc = generatingDoc();
         when(pdfDocumentService.findByInvoiceId("doc-123")).thenReturn(Optional.empty());
         when(signedXmlFetchPort.fetch(SIGNED_XML_URL)).thenReturn(SIGNED_XML_CONTENT);
-        when(pdfGenerationService.generatePdf(anyString(), anyString(), anyString())).thenReturn(new byte[1000]);
+        when(pdfGenerationService.generatePdf(anyString(), anyString())).thenReturn(new byte[1000]);
         when(pdfStoragePort.store(anyString(), any())).thenThrow(new RuntimeException("MinIO unavailable"));
         when(pdfDocumentService.beginGeneration(anyString(), anyString())).thenReturn(doc);
 
@@ -364,7 +364,7 @@ class SagaCommandHandlerTest {
         when(pdfDocumentService.findByInvoiceId("doc-123")).thenReturn(Optional.empty());
         when(pdfDocumentService.beginGeneration(anyString(), anyString())).thenReturn(doc);
         when(signedXmlFetchPort.fetch(SIGNED_XML_URL)).thenReturn(SIGNED_XML_CONTENT);
-        when(pdfGenerationService.generatePdf(anyString(), anyString(), anyString())).thenReturn(new byte[1000]);
+        when(pdfGenerationService.generatePdf(anyString(), anyString())).thenReturn(new byte[1000]);
         when(pdfStoragePort.store(anyString(), any())).thenReturn(S3_KEY);
         when(pdfStoragePort.resolveUrl(S3_KEY)).thenReturn(FILE_URL);
         doThrow(new RuntimeException("DB connection lost"))
@@ -383,7 +383,7 @@ class SagaCommandHandlerTest {
         when(pdfDocumentService.findByInvoiceId("doc-123")).thenReturn(Optional.empty());
         when(pdfDocumentService.beginGeneration(anyString(), anyString())).thenReturn(doc);
         when(signedXmlFetchPort.fetch(SIGNED_XML_URL)).thenReturn(SIGNED_XML_CONTENT);
-        when(pdfGenerationService.generatePdf(anyString(), anyString(), anyString())).thenReturn(new byte[1000]);
+        when(pdfGenerationService.generatePdf(anyString(), anyString())).thenReturn(new byte[1000]);
         when(pdfStoragePort.store(anyString(), any())).thenReturn(S3_KEY);
         when(pdfStoragePort.resolveUrl(S3_KEY)).thenReturn(FILE_URL);
         doThrow(new RuntimeException("DB connection lost"))
@@ -533,7 +533,7 @@ class SagaCommandHandlerTest {
         when(pdfDocumentService.findByInvoiceId("doc-123")).thenReturn(Optional.empty());
         when(pdfDocumentService.beginGeneration(anyString(), anyString())).thenReturn(doc);
         when(signedXmlFetchPort.fetch(SIGNED_XML_URL)).thenReturn(SIGNED_XML_CONTENT);
-        when(pdfGenerationService.generatePdf(anyString(), anyString(), anyString()))
+        when(pdfGenerationService.generatePdf(anyString(), anyString()))
                 .thenReturn(new byte[]{1, 2, 3});
         when(pdfStoragePort.store(anyString(), any()))
                 .thenThrow(CallNotPermittedException.createCallNotPermittedException(

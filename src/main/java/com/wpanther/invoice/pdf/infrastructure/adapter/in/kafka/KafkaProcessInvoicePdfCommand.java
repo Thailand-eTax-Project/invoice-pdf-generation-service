@@ -24,9 +24,6 @@ public class KafkaProcessInvoicePdfCommand extends SagaCommand {
     @JsonProperty("signedXmlUrl")
     private final String signedXmlUrl;
 
-    @JsonProperty("invoiceDataJson")
-    private final String invoiceDataJson;
-
     @JsonCreator
     public KafkaProcessInvoicePdfCommand(
             @JsonProperty("eventId") UUID eventId,
@@ -38,22 +35,19 @@ public class KafkaProcessInvoicePdfCommand extends SagaCommand {
             @JsonProperty("correlationId") String correlationId,
             @JsonProperty("documentId") String documentId,
             @JsonProperty("documentNumber") String documentNumber,
-            @JsonProperty("signedXmlUrl") String signedXmlUrl,
-            @JsonProperty("invoiceDataJson") String invoiceDataJson) {
+            @JsonProperty("signedXmlUrl") String signedXmlUrl) {
         super(eventId, occurredAt, eventType, version, sagaId, sagaStep, correlationId);
         this.documentId = documentId;
         this.documentNumber = documentNumber;
         this.signedXmlUrl = signedXmlUrl;
-        this.invoiceDataJson = invoiceDataJson;
     }
 
     public KafkaProcessInvoicePdfCommand(String sagaId, SagaStep sagaStep, String correlationId,
                                          String documentId, String documentNumber,
-                                         String signedXmlUrl, String invoiceDataJson) {
+                                         String signedXmlUrl) {
         super(sagaId, sagaStep, correlationId);
         this.documentId = Objects.requireNonNull(documentId, "documentId is required");
         this.documentNumber = Objects.requireNonNull(documentNumber, "documentNumber is required");
         this.signedXmlUrl = Objects.requireNonNull(signedXmlUrl, "signedXmlUrl is required");
-        this.invoiceDataJson = Objects.requireNonNull(invoiceDataJson, "invoiceDataJson is required");
     }
 }

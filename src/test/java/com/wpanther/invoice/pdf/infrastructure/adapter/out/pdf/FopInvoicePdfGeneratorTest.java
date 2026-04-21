@@ -51,19 +51,50 @@ class FopInvoicePdfGeneratorTest {
     @DisplayName("Valid invoice XML → returns non-empty PDF bytes starting with %PDF")
     void generatePdf_validXml_returnsPdfBytes() throws Exception {
         FopInvoicePdfGenerator gen = new FopInvoicePdfGenerator(1, 52428800L, new SimpleMeterRegistry());
-        String xml = "<invoice>"
-                + "<invoiceNumber>INV-TEST-001</invoiceNumber>"
-                + "<invoiceDate>2024-01-15</invoiceDate>"
-                + "<seller><name>Test Seller</name><address>1 Test Rd</address>"
-                + "<taxId>1234567890123</taxId></seller>"
-                + "<buyer><name>Test Buyer</name><address>2 Test Rd</address>"
-                + "<taxId>9876543210987</taxId></buyer>"
-                + "<lineItems><item><description>Widget</description>"
-                + "<quantity>1</quantity><unit>EA</unit>"
-                + "<unitPrice>1000</unitPrice><amount>1000</amount></item></lineItems>"
-                + "<subtotal>1000</subtotal><amountBeforeVat>1000</amountBeforeVat>"
-                + "<vatRate>7</vatRate><vatAmount>70</vatAmount><grandTotal>1070</grandTotal>"
-                + "</invoice>";
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                + "<rsm:Invoice_CrossIndustryInvoice"
+                + " xmlns:rsm=\"urn:etda:uncefact:data:standard:Invoice_CrossIndustryInvoice:2\""
+                + " xmlns:ram=\"urn:etda:uncefact:data:standard:Invoice_ReusableAggregateBusinessInformationEntity:2\">"
+                + "<rsm:ExchangedDocument><ram:ID>INV-TEST-001</ram:ID>"
+                + "<ram:IssueDateTime>2024-01-15T10:30:00</ram:IssueDateTime>"
+                + "<ram:TypeCode>380</ram:TypeCode></rsm:ExchangedDocument>"
+                + "<rsm:SupplyChainTradeTransaction>"
+                + "<ram:ApplicableHeaderTradeAgreement>"
+                + "<ram:SellerTradeParty><ram:Name>Test Seller</ram:Name>"
+                + "<ram:SpecifiedTaxRegistration><ram:ID>1234567890123</ram:ID></ram:SpecifiedTaxRegistration>"
+                + "<ram:PostalTradeAddress><ram:PostcodeCode>10310</ram:PostcodeCode>"
+                + "<ram:CityName>1017</ram:CityName><ram:CountryID>TH</ram:CountryID></ram:PostalTradeAddress>"
+                + "</ram:SellerTradeParty>"
+                + "<ram:BuyerTradeParty><ram:Name>Test Buyer</ram:Name>"
+                + "<ram:SpecifiedTaxRegistration><ram:ID>9876543210987</ram:ID></ram:SpecifiedTaxRegistration>"
+                + "<ram:PostalTradeAddress><ram:PostcodeCode>10330</ram:PostcodeCode>"
+                + "<ram:CityName>1005</ram:CityName><ram:CountryID>TH</ram:CountryID></ram:PostalTradeAddress>"
+                + "</ram:BuyerTradeParty>"
+                + "</ram:ApplicableHeaderTradeAgreement>"
+                + "<ram:ApplicableHeaderTradeSettlement>"
+                + "<ram:InvoiceCurrencyCode>THB</ram:InvoiceCurrencyCode>"
+                + "<ram:ApplicableTradeTax><ram:CalculatedRate>7</ram:CalculatedRate>"
+                + "<ram:BasisAmount>1000.00</ram:BasisAmount>"
+                + "<ram:CalculatedAmount>70.00</ram:CalculatedAmount></ram:ApplicableTradeTax>"
+                + "<ram:SpecifiedTradeSettlementHeaderMonetarySummation>"
+                + "<ram:LineTotalAmount>1000.00</ram:LineTotalAmount>"
+                + "<ram:GrandTotalAmount>1070.00</ram:GrandTotalAmount>"
+                + "</ram:SpecifiedTradeSettlementHeaderMonetarySummation>"
+                + "</ram:ApplicableHeaderTradeSettlement>"
+                + "<rsm:IncludedSupplyChainTradeLineItem>"
+                + "<ram:SpecifiedTradeProduct><ram:Name>Widget</ram:Name></ram:SpecifiedTradeProduct>"
+                + "<ram:SpecifiedLineTradeAgreement>"
+                + "<ram:NetPriceProductTradePrice><ram:ChargeAmount>100.00</ram:ChargeAmount></ram:NetPriceProductTradePrice>"
+                + "</ram:SpecifiedLineTradeAgreement>"
+                + "<ram:SpecifiedLineTradeDelivery><ram:BilledQuantity unitCode=\"EA\">10</ram:BilledQuantity></ram:SpecifiedLineTradeDelivery>"
+                + "<ram:SpecifiedLineTradeSettlement>"
+                + "<ram:SpecifiedTradeSettlementLineMonetarySummation>"
+                + "<ram:NetLineTotalAmount>1000.00</ram:NetLineTotalAmount>"
+                + "</ram:SpecifiedTradeSettlementLineMonetarySummation>"
+                + "</ram:SpecifiedLineTradeSettlement>"
+                + "</rsm:IncludedSupplyChainTradeLineItem>"
+                + "</rsm:SupplyChainTradeTransaction>"
+                + "</rsm:Invoice_CrossIndustryInvoice>";
 
         byte[] result = gen.generatePdf(xml);
 
@@ -95,12 +126,19 @@ class FopInvoicePdfGeneratorTest {
     void generatePdf_pdfExceedsMaxSize_throwsPdfGenerationException() throws Exception {
         // Set a 1-byte limit so any real PDF will exceed it
         FopInvoicePdfGenerator gen = new FopInvoicePdfGenerator(1, 1L, new SimpleMeterRegistry());
-        String xml = "<invoice>"
-                + "<invoiceNumber>INV-TOOBIG</invoiceNumber>"
-                + "<seller><name>S</name></seller>"
-                + "<buyer><name>B</name></buyer>"
-                + "<lineItems/>"
-                + "</invoice>";
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                + "<rsm:Invoice_CrossIndustryInvoice"
+                + " xmlns:rsm=\"urn:etda:uncefact:data:standard:Invoice_CrossIndustryInvoice:2\""
+                + " xmlns:ram=\"urn:etda:uncefact:data:standard:Invoice_ReusableAggregateBusinessInformationEntity:2\">"
+                + "<rsm:ExchangedDocument><ram:ID>INV-TOOBIG</ram:ID></rsm:ExchangedDocument>"
+                + "<rsm:SupplyChainTradeTransaction>"
+                + "<ram:ApplicableHeaderTradeAgreement>"
+                + "<ram:SellerTradeParty><ram:Name>S</ram:Name></ram:SellerTradeParty>"
+                + "<ram:BuyerTradeParty><ram:Name>B</ram:Name></ram:BuyerTradeParty>"
+                + "</ram:ApplicableHeaderTradeAgreement>"
+                + "<ram:ApplicableHeaderTradeSettlement/>"
+                + "</rsm:SupplyChainTradeTransaction>"
+                + "</rsm:Invoice_CrossIndustryInvoice>";
 
         assertThatThrownBy(() -> gen.generatePdf(xml))
                 .isInstanceOf(FopInvoicePdfGenerator.PdfGenerationException.class)

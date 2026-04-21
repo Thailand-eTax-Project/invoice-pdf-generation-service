@@ -11,7 +11,7 @@ public class KafkaCommandMapper {
         return new ProcessInvoicePdfCommand(
                 src.getSagaId(), src.getSagaStep(), src.getCorrelationId(),
                 src.getDocumentId(), src.getDocumentNumber(),
-                src.getSignedXmlUrl(), src.getInvoiceDataJson());
+                src.getSignedXmlUrl());
     }
 
     public CompensateInvoicePdfCommand toCompensate(KafkaCompensateInvoicePdfCommand src) {
