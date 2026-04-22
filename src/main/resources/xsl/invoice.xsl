@@ -7,21 +7,24 @@
 
     <xsl:output method="xml" indent="yes"/>
 
+    <!-- Injected by Java: ThaiAmountWordsConverter output -->
+    <xsl:param name="amountInWords"/>
+
     <xsl:variable name="page-width">210mm</xsl:variable>
     <xsl:variable name="page-height">297mm</xsl:variable>
     <xsl:variable name="margin">15mm</xsl:variable>
 
-    <xsl:variable name="font-family">NotoSansThaiLooped, Helvetica, sans-serif</xsl:variable>
+    <xsl:variable name="font-family">THSarabunNew, NotoSansThai, Helvetica, sans-serif</xsl:variable>
     <xsl:variable name="font-size">11pt</xsl:variable>
     <xsl:variable name="font-size-small">9pt</xsl:variable>
     <xsl:variable name="font-size-large">14pt</xsl:variable>
     <xsl:variable name="font-size-title">18pt</xsl:variable>
 
-    <!-- Convenience variables for deep paths -->
+    <!-- Global variables using absolute paths from document root -->
     <xsl:variable name="headerAgreement"
-        select="rsm:SupplyChainTradeTransaction/ram:ApplicableHeaderTradeAgreement"/>
+        select="/rsm:Invoice_CrossIndustryInvoice/rsm:SupplyChainTradeTransaction/ram:ApplicableHeaderTradeAgreement"/>
     <xsl:variable name="headerSettlement"
-        select="rsm:SupplyChainTradeTransaction/ram:ApplicableHeaderTradeSettlement"/>
+        select="/rsm:Invoice_CrossIndustryInvoice/rsm:SupplyChainTradeTransaction/ram:ApplicableHeaderTradeSettlement"/>
     <xsl:variable name="monetarySummation"
         select="$headerSettlement/ram:SpecifiedTradeSettlementHeaderMonetarySummation"/>
 
@@ -51,6 +54,7 @@
                     <xsl:call-template name="invoice-details"/>
                     <xsl:call-template name="line-items"/>
                     <xsl:call-template name="totals"/>
+                    <xsl:call-template name="amount-in-words"/>
                 </fo:flow>
             </fo:page-sequence>
         </fo:root>
@@ -212,25 +216,22 @@
                         <fo:block font-size="{$font-size-small}">Date</fo:block>
                     </fo:table-cell>
                     <fo:table-cell padding="2mm" border="0.5pt solid #dddddd">
-                        <fo:block><xsl:value-of select="rsm:ExchangedDocument/ram:IssueDateTime"/></fo:block>
+                        <fo:block><xsl:value-of select="substring(rsm:ExchangedDocument/ram:IssueDateTime, 1, 10)"/></fo:block>
                     </fo:table-cell>
                 </fo:table-row>
-                <fo:table-row>
-                    <fo:table-cell padding="2mm" border="0.5pt solid #dddddd" background-color="#e8e8e8">
-                        <fo:block font-weight="bold">&#x0E1B;&#x0E23;&#x0E30;&#x0E40;&#x0E20;&#x0E17;</fo:block>
-                        <fo:block font-size="{$font-size-small}">Type</fo:block>
-                    </fo:table-cell>
-                    <fo:table-cell padding="2mm" border="0.5pt solid #dddddd">
-                        <fo:block><xsl:value-of select="rsm:ExchangedDocument/ram:TypeCode"/></fo:block>
-                    </fo:table-cell>
-                    <fo:table-cell padding="2mm" border="0.5pt solid #dddddd" background-color="#e8e8e8">
-                        <fo:block font-weight="bold">&#x0E2A;&#x0E01;&#x0E38;&#x0E25;&#x0E40;&#x0E07;&#x0E34;&#x0E19;</fo:block>
-                        <fo:block font-size="{$font-size-small}">Currency</fo:block>
-                    </fo:table-cell>
-                    <fo:table-cell padding="2mm" border="0.5pt solid #dddddd">
-                        <fo:block><xsl:value-of select="$headerSettlement/ram:InvoiceCurrencyCode"/></fo:block>
-                    </fo:table-cell>
-                </fo:table-row>
+                <xsl:if test="$headerSettlement/ram:SpecifiedTradePaymentTerms/ram:DueDateDateTime">
+                    <fo:table-row>
+                        <fo:table-cell padding="2mm" border="0.5pt solid #dddddd" background-color="#e8e8e8">
+                            <fo:block font-weight="bold">&#x0E27;&#x0E31;&#x0E19;&#x0E04;&#x0E23;&#x0E1A;&#x0E01;&#x0E33;&#x0E2B;&#x0E19;&#x0E14;&#x0E0A;&#x0E33;&#x0E23;&#x0E30;</fo:block>
+                            <fo:block font-size="{$font-size-small}">Due Date</fo:block>
+                        </fo:table-cell>
+                        <fo:table-cell padding="2mm" border="0.5pt solid #dddddd" number-columns-spanned="3">
+                            <fo:block>
+                                <xsl:value-of select="substring($headerSettlement/ram:SpecifiedTradePaymentTerms/ram:DueDateDateTime, 1, 10)"/>
+                            </fo:block>
+                        </fo:table-cell>
+                    </fo:table-row>
+                </xsl:if>
             </fo:table-body>
         </fo:table>
     </xsl:template>
@@ -374,6 +375,17 @@
 
         <!-- End marker for page counting -->
         <fo:block id="last-page"/>
+    </xsl:template>
+
+    <!-- Amount in words (XSLT parameter) -->
+    <xsl:template name="amount-in-words">
+        <xsl:if test="$amountInWords != ''">
+            <fo:block font-family="{$font-family}" font-size="{$font-size}" space-after="5mm"
+                padding="3mm" background-color="#fffde7" border="0.5pt solid #ffc107">
+                <fo:inline font-weight="bold">&#x0E08;&#x0E33;&#x0E19;&#x0E27;&#x0E19;&#x0E40;&#x0E07;&#x0E34;&#x0E19;&#x0E40;&#x0E1B;&#x0E47;&#x0E19;&#x0E15;&#x0E31;&#x0E27;&#x0E2D;&#x0E31;&#x0E01;&#x0E29;&#x0E23;: </fo:inline>
+                <xsl:value-of select="$amountInWords"/>
+            </fo:block>
+        </xsl:if>
     </xsl:template>
 
 </xsl:stylesheet>
