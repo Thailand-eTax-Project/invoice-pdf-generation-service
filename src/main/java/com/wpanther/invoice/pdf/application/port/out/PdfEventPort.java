@@ -1,6 +1,6 @@
 package com.wpanther.invoice.pdf.application.port.out;
 
-import com.wpanther.invoice.pdf.domain.event.InvoicePdfGeneratedEvent;
+import com.wpanther.invoice.pdf.application.dto.event.InvoicePdfGeneratedEvent;
 
 /**
  * Output port for publishing PDF-related integration events.

@@ -3,7 +3,7 @@ package com.wpanther.invoice.pdf.infrastructure.adapter.out.messaging;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wpanther.invoice.pdf.application.port.out.PdfEventPort;
 import com.wpanther.invoice.pdf.domain.constants.PdfGenerationConstants;
-import com.wpanther.invoice.pdf.domain.event.InvoicePdfGeneratedEvent;
+import com.wpanther.invoice.pdf.application.dto.event.InvoicePdfGeneratedEvent;
 import com.wpanther.saga.infrastructure.outbox.OutboxService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

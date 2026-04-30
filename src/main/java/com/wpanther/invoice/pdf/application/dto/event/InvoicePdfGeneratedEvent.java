@@ -1,0 +1,88 @@
+package com.wpanther.invoice.pdf.application.dto.event;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.wpanther.saga.domain.model.TraceEvent;
+import lombok.Getter;
+
+import java.time.Instant;
+import java.util.UUID;
+
+/**
+ * Event published when an invoice PDF has been generated.
+ * Consumed by notification-service.
+ */
+@Getter
+public class InvoicePdfGeneratedEvent extends TraceEvent {
+
+    private static final String EVENT_TYPE = "pdf.generated.invoice";
+    private static final String SOURCE = "invoice-pdf-generation-service";
+    private static final String TRACE_TYPE = "PDF_GENERATED";
+
+    @JsonProperty("documentId")
+    private final String documentId;
+
+    @JsonProperty("documentNumber")
+    private final String documentNumber;
+
+    @JsonProperty("documentUrl")
+    private final String documentUrl;
+
+    @JsonProperty("fileSize")
+    private final long fileSize;
+
+    @JsonProperty("xmlEmbedded")
+    private final boolean xmlEmbedded;
+
+    /**
+     * Convenience constructor for creating a new invoice PDF generated event.
+     * Both {@code sagaId} and {@code correlationId} are stored in the
+     * {@link TraceEvent} base class.
+     */
+    public InvoicePdfGeneratedEvent(
+            String sagaId,
+            String documentId,
+            String documentNumber,
+            String documentUrl,
+            long fileSize,
+            boolean xmlEmbedded,
+            String correlationId
+    ) {
+        super(sagaId, correlationId, SOURCE, TRACE_TYPE, null);
+        this.documentId = documentId;
+        this.documentNumber = documentNumber;
+        this.documentUrl = documentUrl;
+        this.fileSize = fileSize;
+        this.xmlEmbedded = xmlEmbedded;
+    }
+
+    @Override
+    public String getEventType() {
+        return EVENT_TYPE;
+    }
+
+    @JsonCreator
+    public InvoicePdfGeneratedEvent(
+            @JsonProperty("eventId") UUID eventId,
+            @JsonProperty("occurredAt") Instant occurredAt,
+            @JsonProperty("eventType") String eventType,
+            @JsonProperty("version") int version,
+            @JsonProperty("sagaId") String sagaId,
+            @JsonProperty("source") String source,
+            @JsonProperty("traceType") String traceType,
+            @JsonProperty("context") String context,
+            @JsonProperty("documentId") String documentId,
+            @JsonProperty("documentNumber") String documentNumber,
+            @JsonProperty("documentUrl") String documentUrl,
+            @JsonProperty("fileSize") long fileSize,
+            @JsonProperty("xmlEmbedded") boolean xmlEmbedded,
+            @JsonProperty("correlationId") String correlationId
+    ) {
+        super(eventId, occurredAt, eventType, version, null, correlationId, source, traceType, context);
+        this.documentId = documentId;
+        this.documentNumber = documentNumber;
+        this.documentUrl = documentUrl;
+        this.fileSize = fileSize;
+        this.xmlEmbedded = xmlEmbedded;
+    }
+}
