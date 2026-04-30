@@ -2,9 +2,7 @@ package com.wpanther.invoice.pdf.application.service;
 
 import com.wpanther.invoice.pdf.application.port.out.PdfEventPort;
 import com.wpanther.invoice.pdf.application.port.out.SagaReplyPort;
-import com.wpanther.invoice.pdf.domain.event.CompensateInvoicePdfCommand;
-import com.wpanther.invoice.pdf.domain.event.InvoicePdfGeneratedEvent;
-import com.wpanther.invoice.pdf.domain.event.ProcessInvoicePdfCommand;
+import com.wpanther.invoice.pdf.application.dto.event.InvoicePdfGeneratedEvent;
 import com.wpanther.invoice.pdf.domain.model.GenerationStatus;
 import com.wpanther.invoice.pdf.domain.model.InvoicePdfDocument;
 import com.wpanther.invoice.pdf.domain.repository.InvoicePdfDocumentRepository;
@@ -39,19 +37,9 @@ class InvoicePdfDocumentServiceTest {
     private static final UUID DOC_ID = UUID.randomUUID();
     private static final String S3_KEY  = "2024/01/15/invoice-INV-001-uuid.pdf";
     private static final String FILE_URL = "http://localhost:9001/invoices/" + S3_KEY;
-
-    private ProcessInvoicePdfCommand processCommand() {
-        return new ProcessInvoicePdfCommand(
-                "saga-001", SagaStep.GENERATE_INVOICE_PDF, "corr-456",
-                "doc-123", "INV-001",
-                "http://minio/signed.xml");
-    }
-
-    private CompensateInvoicePdfCommand compensateCommand() {
-        return new CompensateInvoicePdfCommand(
-                "saga-001", SagaStep.GENERATE_INVOICE_PDF, "corr-456",
-                "doc-123");
-    }
+    private static final String SAGA_ID = "saga-001";
+    private static final String CORR_ID = "corr-456";
+    private static final SagaStep SAGA_STEP = SagaStep.GENERATE_INVOICE_PDF;
 
     private InvoicePdfDocument generatingDoc() {
         return InvoicePdfDocument.builder()
@@ -114,15 +102,16 @@ class InvoicePdfDocumentServiceTest {
         when(repository.findById(DOC_ID)).thenReturn(Optional.of(doc));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.completeGenerationAndPublish(DOC_ID, S3_KEY, FILE_URL, 5000L, -1, processCommand());
+        service.completeGenerationAndPublish(DOC_ID, S3_KEY, FILE_URL, 5000L, -1,
+                "doc-123", "INV-001", SAGA_ID, SAGA_STEP, CORR_ID);
 
         assertThat(doc.getStatus()).isEqualTo(GenerationStatus.COMPLETED);
         assertThat(doc.getDocumentPath()).isEqualTo(S3_KEY);
         assertThat(doc.getFileSize()).isEqualTo(5000L);
         assertThat(doc.isXmlEmbedded()).isTrue();
         verify(pdfEventPort).publishPdfGenerated(any(InvoicePdfGeneratedEvent.class));
-        verify(sagaReplyPort).publishSuccess(eq("saga-001"), eq(SagaStep.GENERATE_INVOICE_PDF),
-                eq("corr-456"), eq(FILE_URL), eq(5000L));
+        verify(sagaReplyPort).publishSuccess(eq(SAGA_ID), eq(SAGA_STEP), eq(CORR_ID),
+                eq(FILE_URL), eq(5000L));
     }
 
     @Test
@@ -132,7 +121,8 @@ class InvoicePdfDocumentServiceTest {
         when(repository.findById(DOC_ID)).thenReturn(Optional.of(doc));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.completeGenerationAndPublish(DOC_ID, S3_KEY, FILE_URL, 1000L, 1, processCommand());
+        service.completeGenerationAndPublish(DOC_ID, S3_KEY, FILE_URL, 1000L, 1,
+                "doc-123", "INV-001", SAGA_ID, SAGA_STEP, CORR_ID);
 
         // previousRetryCount=1 → target=2
         assertThat(doc.getRetryCount()).isEqualTo(2);
@@ -145,7 +135,8 @@ class InvoicePdfDocumentServiceTest {
         when(repository.findById(DOC_ID)).thenReturn(Optional.of(doc));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.completeGenerationAndPublish(DOC_ID, S3_KEY, FILE_URL, 1000L, -1, processCommand());
+        service.completeGenerationAndPublish(DOC_ID, S3_KEY, FILE_URL, 1000L, -1,
+                "doc-123", "INV-001", SAGA_ID, SAGA_STEP, CORR_ID);
 
         assertThat(doc.getRetryCount()).isZero();
     }
@@ -161,12 +152,11 @@ class InvoicePdfDocumentServiceTest {
         when(repository.findById(DOC_ID)).thenReturn(Optional.of(doc));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.failGenerationAndPublish(DOC_ID, "FOP failed", 1, processCommand());
+        service.failGenerationAndPublish(DOC_ID, "FOP failed", 1, SAGA_ID, SAGA_STEP, CORR_ID);
 
         assertThat(doc.getStatus()).isEqualTo(GenerationStatus.FAILED);
         assertThat(doc.getRetryCount()).isEqualTo(2); // 1+1
-        verify(sagaReplyPort).publishFailure(eq("saga-001"), eq(SagaStep.GENERATE_INVOICE_PDF),
-                eq("corr-456"), eq("FOP failed"));
+        verify(sagaReplyPort).publishFailure(eq(SAGA_ID), eq(SAGA_STEP), eq(CORR_ID), eq("FOP failed"));
         verify(pdfEventPort, never()).publishPdfGenerated(any());
     }
 
@@ -183,10 +173,10 @@ class InvoicePdfDocumentServiceTest {
                 .documentUrl(FILE_URL).fileSize(9000L).xmlEmbedded(true)
                 .build();
 
-        service.publishIdempotentSuccess(existing, processCommand());
+        service.publishIdempotentSuccess(existing, "doc-123", "INV-001", SAGA_ID, SAGA_STEP, CORR_ID);
 
         verify(pdfEventPort).publishPdfGenerated(any());
-        verify(sagaReplyPort).publishSuccess(eq("saga-001"), any(), eq("corr-456"),
+        verify(sagaReplyPort).publishSuccess(eq(SAGA_ID), any(), eq(CORR_ID),
                 eq(FILE_URL), eq(9000L));
         verifyNoInteractions(repository);
     }
@@ -194,9 +184,9 @@ class InvoicePdfDocumentServiceTest {
     @Test
     @DisplayName("publishRetryExhausted() publishes FAILURE reply without touching repository")
     void publishRetryExhausted_publishesFailure() {
-        service.publishRetryExhausted(processCommand());
+        service.publishRetryExhausted(SAGA_ID, SAGA_STEP, CORR_ID, "doc-123", "INV-001");
 
-        verify(sagaReplyPort).publishFailure(eq("saga-001"), any(), eq("corr-456"),
+        verify(sagaReplyPort).publishFailure(eq(SAGA_ID), any(), eq(CORR_ID),
                 contains("Maximum retry attempts exceeded"));
         verifyNoInteractions(repository);
     }
@@ -204,26 +194,25 @@ class InvoicePdfDocumentServiceTest {
     @Test
     @DisplayName("publishGenerationFailure() publishes FAILURE reply")
     void publishGenerationFailure_publishesFailure() {
-        service.publishGenerationFailure(processCommand(), "signedXmlUrl is null");
+        service.publishGenerationFailure(SAGA_ID, SAGA_STEP, CORR_ID, "signedXmlUrl is null");
 
-        verify(sagaReplyPort).publishFailure(eq("saga-001"), any(), eq("corr-456"),
-                eq("signedXmlUrl is null"));
+        verify(sagaReplyPort).publishFailure(eq(SAGA_ID), any(), eq(CORR_ID), eq("signedXmlUrl is null"));
     }
 
     @Test
     @DisplayName("publishCompensated() publishes COMPENSATED reply")
     void publishCompensated_publishes() {
-        service.publishCompensated(compensateCommand());
+        service.publishCompensated(SAGA_ID, SAGA_STEP, CORR_ID);
 
-        verify(sagaReplyPort).publishCompensated(eq("saga-001"), any(), eq("corr-456"));
+        verify(sagaReplyPort).publishCompensated(eq(SAGA_ID), any(), eq(CORR_ID));
     }
 
     @Test
     @DisplayName("publishCompensationFailure() publishes FAILURE reply")
     void publishCompensationFailure_publishes() {
-        service.publishCompensationFailure(compensateCommand(), "Compensation failed: S3 error");
+        service.publishCompensationFailure(SAGA_ID, SAGA_STEP, CORR_ID, "Compensation failed: S3 error");
 
-        verify(sagaReplyPort).publishFailure(eq("saga-001"), any(), eq("corr-456"),
+        verify(sagaReplyPort).publishFailure(eq(SAGA_ID), any(), eq(CORR_ID),
                 eq("Compensation failed: S3 error"));
     }
 
@@ -233,7 +222,8 @@ class InvoicePdfDocumentServiceTest {
         when(repository.findById(DOC_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                service.completeGenerationAndPublish(DOC_ID, S3_KEY, FILE_URL, 1000L, -1, processCommand()))
+                service.completeGenerationAndPublish(DOC_ID, S3_KEY, FILE_URL, 1000L, -1,
+                        "doc-123", "INV-001", SAGA_ID, SAGA_STEP, CORR_ID))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("internal state error");
     }
@@ -245,10 +235,10 @@ class InvoicePdfDocumentServiceTest {
         when(repository.findById(DOC_ID)).thenReturn(Optional.of(doc));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.failGenerationAndPublish(DOC_ID, null, -1, processCommand());
+        service.failGenerationAndPublish(DOC_ID, null, -1, SAGA_ID, SAGA_STEP, CORR_ID);
 
         assertThat(doc.getErrorMessage()).isEqualTo("PDF generation failed");
-        verify(sagaReplyPort).publishFailure(eq("saga-001"), any(), eq("corr-456"),
+        verify(sagaReplyPort).publishFailure(eq(SAGA_ID), any(), eq(CORR_ID),
                 eq("PDF generation failed"));
     }
 

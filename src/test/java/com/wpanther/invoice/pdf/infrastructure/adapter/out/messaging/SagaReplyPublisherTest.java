@@ -1,7 +1,7 @@
 package com.wpanther.invoice.pdf.infrastructure.adapter.out.messaging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wpanther.invoice.pdf.domain.event.InvoicePdfReplyEvent;
+import com.wpanther.invoice.pdf.infrastructure.adapter.out.messaging.InvoicePdfReplyEvent;
 import com.wpanther.saga.domain.enums.SagaStep;
 import com.wpanther.saga.infrastructure.outbox.OutboxService;
 import org.junit.jupiter.api.BeforeEach;
