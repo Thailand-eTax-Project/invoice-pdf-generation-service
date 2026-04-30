@@ -109,7 +109,8 @@ public class SagaCommandHandler implements ProcessInvoicePdfUseCase, CompensateI
                 // Idempotency: already completed — re-publish and reply SUCCESS
                 if (existing.isPresent() && existing.get().isCompleted()) {
                     pdfDocumentService.publishIdempotentSuccess(
-                            existing.get(), sagaId, documentId, documentNumber, correlationId);
+                            existing.get(), documentId, documentNumber,
+                            sagaId, sagaStep, correlationId);
                     return;
                 }
 
@@ -169,8 +170,9 @@ public class SagaCommandHandler implements ProcessInvoicePdfUseCase, CompensateI
                     // ── Short tx 2 (success): mark COMPLETED + write outbox atomically
                     pdfDocumentService.completeGenerationAndPublish(
                             document.getId(), s3Key, fileUrl, pdfBytes.length,
-                            previousRetryCount, sagaId, sagaStep, correlationId,
-                            documentId, documentNumber);
+                            previousRetryCount,
+                            documentId, documentNumber,
+                            sagaId, sagaStep, correlationId);
                     // ── Transaction committed ────────────────────────────────────────
 
                     log.debug("Successfully processed PDF generation for saga {} document {}",
@@ -183,7 +185,7 @@ public class SagaCommandHandler implements ProcessInvoicePdfUseCase, CompensateI
                             sagaId, documentNumber, e.getMessage());
                     pdfDocumentService.failGenerationAndPublish(
                             document.getId(), "MinIO circuit breaker open: " + e.getMessage(),
-                            previousRetryCount, sagaId, sagaStep, correlationId, documentId, documentNumber);
+                            previousRetryCount, sagaId, sagaStep, correlationId);
 
                 } catch (Exception e) {
                     // If upload succeeded but the DB write failed, the MinIO object is orphaned —
@@ -203,7 +205,7 @@ public class SagaCommandHandler implements ProcessInvoicePdfUseCase, CompensateI
                     // ── Short tx 2 (failure): mark FAILED + write FAILURE reply atomically
                     pdfDocumentService.failGenerationAndPublish(
                             document.getId(), describeThrowable(e), previousRetryCount,
-                            sagaId, sagaStep, correlationId, documentId, documentNumber);
+                            sagaId, sagaStep, correlationId);
                     // ── Transaction committed ────────────────────────────────────────
                 }
 

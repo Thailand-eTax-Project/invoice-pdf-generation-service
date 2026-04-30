@@ -2,9 +2,10 @@ package com.wpanther.invoice.pdf.infrastructure.adapter.in.kafka;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wpanther.invoice.pdf.application.service.SagaCommandHandler;
-import com.wpanther.invoice.pdf.application.usecase.CompensateInvoicePdfUseCase;
-import com.wpanther.invoice.pdf.application.usecase.ProcessInvoicePdfUseCase;
+import com.wpanther.invoice.pdf.application.port.in.CompensateInvoicePdfUseCase;
+import com.wpanther.invoice.pdf.application.port.in.ProcessInvoicePdfUseCase;
+import com.wpanther.invoice.pdf.infrastructure.adapter.in.kafka.dto.CompensateInvoicePdfCommand;
+import com.wpanther.invoice.pdf.infrastructure.adapter.in.kafka.dto.ProcessInvoicePdfCommand;
 import com.wpanther.saga.domain.enums.SagaStep;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
@@ -37,18 +38,15 @@ public class SagaRouteConfig extends RouteBuilder {
     private final ProcessInvoicePdfUseCase processUseCase;
     private final CompensateInvoicePdfUseCase compensateUseCase;
     private final SagaCommandHandler sagaCommandHandler;
-    private final KafkaCommandMapper commandMapper;
     private final ObjectMapper objectMapper;
 
     public SagaRouteConfig(ProcessInvoicePdfUseCase processUseCase,
                            CompensateInvoicePdfUseCase compensateUseCase,
                            SagaCommandHandler sagaCommandHandler,
-                           KafkaCommandMapper commandMapper,
                            ObjectMapper objectMapper) {
         this.processUseCase = processUseCase;
         this.compensateUseCase = compensateUseCase;
         this.sagaCommandHandler = sagaCommandHandler;
-        this.commandMapper = commandMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -71,14 +69,18 @@ public class SagaRouteConfig extends RouteBuilder {
                         .onPrepareFailure(exchange -> {
                             Throwable cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Throwable.class);
                             Object body = exchange.getIn().getBody();
-                            if (body instanceof KafkaProcessInvoicePdfCommand cmd) {
+                            if (body instanceof ProcessInvoicePdfCommand cmd) {
                                 log.error("DLQ: notifying orchestrator of retry exhaustion for saga {} document {}",
                                         cmd.getSagaId(), cmd.getDocumentNumber());
-                                sagaCommandHandler.publishOrchestrationFailure(commandMapper.toProcess(cmd), cause);
-                            } else if (body instanceof KafkaCompensateInvoicePdfCommand cmd) {
+                                sagaCommandHandler.publishOrchestrationFailure(
+                                        cmd.getSagaId(), cmd.getSagaStep(), cmd.getCorrelationId(),
+                                        cmd.getDocumentId(), cmd.getDocumentNumber(), cause);
+                            } else if (body instanceof CompensateInvoicePdfCommand cmd) {
                                 log.error("DLQ: notifying orchestrator of compensation retry exhaustion for saga {} document {}",
                                         cmd.getSagaId(), cmd.getDocumentId());
-                                sagaCommandHandler.publishCompensationOrchestrationFailure(commandMapper.toCompensate(cmd), cause);
+                                sagaCommandHandler.publishCompensationOrchestrationFailure(
+                                        cmd.getSagaId(), cmd.getSagaStep(), cmd.getCorrelationId(),
+                                        cmd.getDocumentId(), cause);
                             } else {
                                 // Body was never deserialized (e.g., malformed JSON, unknown enum).
                                 // Attempt to recover saga coordinates from the raw payload so the
@@ -102,12 +104,18 @@ public class SagaRouteConfig extends RouteBuilder {
                         + "&consumersCount={{app.kafka.consumer.consumers-count}}")
                         .routeId("saga-command-consumer")
                         .log(LoggingLevel.DEBUG, "Received saga command from Kafka: partition=${header[kafka.PARTITION]}, offset=${header[kafka.OFFSET]}")
-                        .unmarshal().json(JsonLibrary.Jackson, KafkaProcessInvoicePdfCommand.class)
+                        .unmarshal().json(JsonLibrary.Jackson, ProcessInvoicePdfCommand.class)
                         .process(exchange -> {
-                                KafkaProcessInvoicePdfCommand cmd = exchange.getIn().getBody(KafkaProcessInvoicePdfCommand.class);
+                                ProcessInvoicePdfCommand cmd = exchange.getIn().getBody(ProcessInvoicePdfCommand.class);
                                 log.info("Processing saga command for saga: {}, document: {}",
                                                 cmd.getSagaId(), cmd.getDocumentNumber());
-                                processUseCase.handle(commandMapper.toProcess(cmd));
+                                processUseCase.handle(
+                                        cmd.getDocumentId(),
+                                        cmd.getDocumentNumber(),
+                                        cmd.getSignedXmlUrl(),
+                                        cmd.getSagaId(),
+                                        cmd.getSagaStep(),
+                                        cmd.getCorrelationId());
                         })
                         .log("Successfully processed saga command");
 
@@ -124,12 +132,16 @@ public class SagaRouteConfig extends RouteBuilder {
                         + "&consumersCount={{app.kafka.consumer.consumers-count}}")
                         .routeId("saga-compensation-consumer")
                         .log(LoggingLevel.DEBUG, "Received compensation command from Kafka: partition=${header[kafka.PARTITION]}, offset=${header[kafka.OFFSET]}")
-                        .unmarshal().json(JsonLibrary.Jackson, KafkaCompensateInvoicePdfCommand.class)
+                        .unmarshal().json(JsonLibrary.Jackson, CompensateInvoicePdfCommand.class)
                         .process(exchange -> {
-                                KafkaCompensateInvoicePdfCommand cmd = exchange.getIn().getBody(KafkaCompensateInvoicePdfCommand.class);
+                                CompensateInvoicePdfCommand cmd = exchange.getIn().getBody(CompensateInvoicePdfCommand.class);
                                 log.info("Processing compensation for saga: {}, document: {}",
                                                 cmd.getSagaId(), cmd.getDocumentId());
-                                compensateUseCase.handle(commandMapper.toCompensate(cmd));
+                                compensateUseCase.handle(
+                                        cmd.getDocumentId(),
+                                        cmd.getSagaId(),
+                                        cmd.getSagaStep(),
+                                        cmd.getCorrelationId());
                         })
                         .log("Successfully processed compensation command");
     }
