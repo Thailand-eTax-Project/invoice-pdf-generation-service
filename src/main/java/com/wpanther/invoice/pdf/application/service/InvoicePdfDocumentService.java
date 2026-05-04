@@ -1,6 +1,8 @@
 package com.wpanther.invoice.pdf.application.service;
 
+import com.wpanther.invoice.pdf.application.dto.event.DocumentArchiveEvent;
 import com.wpanther.invoice.pdf.application.dto.event.InvoicePdfGeneratedEvent;
+import com.wpanther.invoice.pdf.application.port.out.DocumentArchivePort;
 import com.wpanther.invoice.pdf.application.port.out.PdfEventPort;
 import com.wpanther.invoice.pdf.application.port.out.SagaReplyPort;
 import com.wpanther.invoice.pdf.domain.model.InvoicePdfDocument;
@@ -23,6 +25,7 @@ public class InvoicePdfDocumentService {
     private final InvoicePdfDocumentRepository repository;
     private final PdfEventPort pdfEventPort;
     private final SagaReplyPort sagaReplyPort;
+    private final DocumentArchivePort documentArchivePort;
 
     @Autowired(required = false)
     private PdfGenerationMetrics pdfGenerationMetrics;
@@ -30,10 +33,12 @@ public class InvoicePdfDocumentService {
     public InvoicePdfDocumentService(InvoicePdfDocumentRepository repository,
                                      PdfEventPort pdfEventPort,
                                      SagaReplyPort sagaReplyPort,
+                                     DocumentArchivePort documentArchivePort,
                                      PdfGenerationMetrics pdfGenerationMetrics) {
         this.repository = repository;
         this.pdfEventPort = pdfEventPort;
         this.sagaReplyPort = sagaReplyPort;
+        this.documentArchivePort = documentArchivePort;
         this.pdfGenerationMetrics = pdfGenerationMetrics;
     }
 
@@ -78,6 +83,19 @@ public class InvoicePdfDocumentService {
         doc.markXmlEmbedded();
         applyRetryCount(doc, previousRetryCount);
         doc = repository.save(doc);
+
+        // Emit document.archive for unsigned PDF archival
+        documentArchivePort.publish(new DocumentArchiveEvent(
+                cmdDocumentId,
+                doc.getInvoiceNumber(),
+                "INVOICE",
+                "UNSIGNED_PDF",
+                doc.getDocumentUrl(),
+                doc.getInvoiceNumber() + ".pdf",
+                doc.getMimeType(),
+                doc.getFileSize(),
+                sagaId,
+                correlationId));
 
         pdfEventPort.publishPdfGenerated(buildGeneratedEvent(doc, cmdDocumentId, cmdDocumentNumber, sagaId, correlationId));
         sagaReplyPort.publishSuccess(sagaId, sagaStep, correlationId, doc.getDocumentUrl(), doc.getFileSize());

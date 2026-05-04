@@ -1,5 +1,6 @@
 package com.wpanther.invoice.pdf.application.service;
 
+import com.wpanther.invoice.pdf.application.port.out.DocumentArchivePort;
 import com.wpanther.invoice.pdf.application.port.out.PdfEventPort;
 import com.wpanther.invoice.pdf.application.port.out.SagaReplyPort;
 import com.wpanther.invoice.pdf.application.dto.event.InvoicePdfGeneratedEvent;
@@ -30,6 +31,7 @@ class InvoicePdfDocumentServiceTest {
     @Mock private InvoicePdfDocumentRepository repository;
     @Mock private PdfEventPort pdfEventPort;
     @Mock private SagaReplyPort sagaReplyPort;
+    @Mock private DocumentArchivePort documentArchivePort;
 
     @InjectMocks
     private InvoicePdfDocumentService service;

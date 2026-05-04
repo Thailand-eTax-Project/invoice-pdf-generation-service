@@ -52,6 +52,7 @@ app:
       saga-compensation-invoice-pdf: saga.compensation.invoice-pdf
       saga-reply-invoice-pdf: saga.reply.invoice-pdf
       pdf-generated: pdf.generated.invoice
+      document-archive: document.archive
       dlq: pdf.generation.invoice.dlq
   minio:
     endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
