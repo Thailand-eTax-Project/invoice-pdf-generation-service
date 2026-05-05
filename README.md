@@ -127,6 +127,7 @@ mvn flyway:migrate
 |-------|---------|
 | `saga.reply.invoice-pdf` | SUCCESS/FAILURE/COMPENSATED replies to orchestrator |
 | `pdf.generated.invoice` | Notification events for downstream services |
+| `document.archive` | Fire-and-forget archival (UNSIGNED_PDF stored by document-storage-service) |
 
 ### Command Format
 
